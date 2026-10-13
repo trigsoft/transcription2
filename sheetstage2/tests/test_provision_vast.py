@@ -8,6 +8,19 @@ import tarfile
 import pytest
 
 
+@pytest.mark.parametrize('exists', [True, False])
+def test_python_guard_does_not_require_late_generated_agent_guide(tmp_path, exists):
+    installer = Path(__file__).parents[1] / 'deploy/install-vast.sh'
+    guard = next(line for line in installer.read_text().splitlines() if '$PY ]]' in line)
+    python = tmp_path / 'python'
+    if exists:
+        python.write_text('#!/bin/sh\nexit 0\n')
+        python.chmod(0o755)
+    result = subprocess.run(['bash', '-c', guard],
+                            env=dict(os.environ, PY=str(python)), capture_output=True)
+    assert result.returncode == (0 if exists else 1)
+
+
 @pytest.mark.parametrize('status', [0, 42, 7])
 def test_provision_retries_only_audio_and_marks_only_success(tmp_path, status):
     script = Path(__file__).parents[1] / 'deploy/provision-vast.sh'

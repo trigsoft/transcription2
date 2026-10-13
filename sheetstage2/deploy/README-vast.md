@@ -9,7 +9,7 @@ SheetSage2 + MuScriptor 的 Web 服务部署源码。不包含模型、访问凭
 3. 添加环境变量：
 
    ```text
-   PROVISIONING_SCRIPT=https://raw.githubusercontent.com/trigsoft/transcription2/v0.1.0/sheetstage2/deploy/provision-vast.sh
+   PROVISIONING_SCRIPT=https://raw.githubusercontent.com/trigsoft/transcription2/v0.1.1/sheetstage2/deploy/provision-vast.sh
    ```
 
 4. 在 Vast 账号的私有环境变量设置中添加 `HF_TOKEN`，对应账号需有 MuScriptor Large 模型访问权限；不要把 Token 保存进公开模板。

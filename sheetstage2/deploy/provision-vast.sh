@@ -14,9 +14,9 @@ if [[ -f "$ROOT/deploy/vast-provisioned" ]]; then
 fi
 archive=$(mktemp)
 trap 'rm -f "$archive"' EXIT
-echo '下载 transcription2 v0.1.0 源码……'
+echo '下载 transcription2 v0.1.1 源码……'
 curl -fL --retry 2 --connect-timeout 30 --max-time 300 \
- https://github.com/trigsoft/transcription2/archive/refs/tags/v0.1.0.tar.gz -o "$archive"
+ https://github.com/trigsoft/transcription2/archive/refs/tags/v0.1.1.tar.gz -o "$archive"
 tar -xzf "$archive" --strip-components=1 -C "$ROOT"
 if bash "$ROOT/sheetstage2/deploy/install-vast.sh"; then
  :

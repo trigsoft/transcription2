@@ -30,7 +30,7 @@ trap 'install_status=$?; echo "安装失败：第 $LINENO 行。请检查上方�
 [[ $(uname -m) == x86_64 ]] || { echo '仅支持 Linux x86_64。' >&2; exit 1; }
 . /etc/os-release
 [[ $ID == ubuntu && $VERSION_ID == 24.04 ]] || { echo '此脚本仅适用于 Ubuntu 24.04。' >&2; exit 1; }
-[[ -f /etc/vast-agents-guide.md && -x $PY ]] || { echo '未找到 Vast 预装环境。' >&2; exit 1; }
+[[ -x $PY ]] || { echo "未找到可执行的 Python：$PY" >&2; exit 1; }
 [[ -d $ROOT/muscriptor/muscriptor && -f $ROOT/sheetstage2/pdf-web/dist/index.html ]]
 command -v supervisorctl >/dev/null
 [[ -f /opt/supervisor-scripts/utils/logging.sh && -f /opt/supervisor-scripts/utils/environment.sh ]]
