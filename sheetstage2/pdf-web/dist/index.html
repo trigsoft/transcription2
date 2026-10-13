@@ -1,0 +1,1256 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="description" content="上传音乐并生成带和弦的数字简谱" />
+    <title>音乐转简谱</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23192333'/%3E%3Cpath d='M17 18h30M17 27h30M17 36h30M17 45h30' stroke='%23d9e2f1' stroke-width='3'/%3E%3Ccircle cx='29' cy='34' r='7' fill='%23f2b84b'/%3E%3Cpath d='M36 33V15' stroke='%23f2b84b' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E"
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        background: #e9edf3;
+        color: #192333;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-width: 320px;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 15px clamp(16px, 3vw, 36px);
+        background: #192333;
+        color: white;
+        box-shadow: 0 8px 24px rgb(17 28 43 / 18%);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(1.1rem, 2vw, 1.35rem);
+        font-weight: 700;
+      }
+
+      header p {
+        margin: 3px 0 0;
+        color: #bfc9d8;
+        font-size: 0.8125rem;
+      }
+
+      .account {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 0.875rem;
+      }
+
+      .account button {
+        width: auto;
+        min-height: 36px;
+        margin: 0;
+        padding-inline: 14px;
+        border: 1px solid #667287;
+        background: transparent;
+        color: white;
+      }
+
+      .header-login {
+        width: auto;
+        min-height: 36px;
+        margin: 0;
+        padding-inline: 14px;
+        border: 1px solid #667287;
+        background: transparent;
+        color: white;
+      }
+
+      .account-usage {
+        color: #f2b84b;
+      }
+
+      main {
+        width: min(100% - 28px, 980px);
+        margin: 0 auto;
+        padding: clamp(24px, 5vw, 56px) 0;
+      }
+
+      .card {
+        padding: clamp(22px, 4vw, 38px);
+        border: 1px solid #d4dbe5;
+        border-radius: 18px;
+        background: white;
+        box-shadow: 0 20px 55px rgb(25 35 51 / 12%);
+      }
+
+      .card h2 {
+        margin: 0 0 6px;
+        font-size: clamp(1.35rem, 4vw, 2rem);
+      }
+
+      .lead {
+        margin: 0 0 24px;
+        color: #596579;
+        font-size: 1rem;
+        line-height: 1.6;
+      }
+
+      .auth-form {
+        display: grid;
+        gap: 14px;
+        margin-top: 22px;
+      }
+
+      .field {
+        display: grid;
+        gap: 7px;
+        color: #3f4b5e;
+        font-size: 0.875rem;
+        font-weight: 650;
+      }
+
+      .field input {
+        width: 100%;
+        min-height: 46px;
+        padding: 0 13px;
+        border: 1px solid #aeb8c6;
+        border-radius: 9px;
+        background: white;
+        color: #192333;
+        font: inherit;
+      }
+
+      .field input:focus {
+        border-color: #d79922;
+        outline: 3px solid #f9ddb0;
+      }
+
+      .song-info-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 14px;
+      }
+
+      .code-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: end;
+        gap: 10px;
+      }
+
+      .code-row button {
+        width: auto;
+        min-width: 132px;
+      }
+
+      .auth-form button {
+        margin-top: 0;
+      }
+
+      .auth-note {
+        margin: 14px 0 0;
+        color: #6a7688;
+        font-size: 0.8125rem;
+      }
+
+      .admin-login {
+        margin-top: 20px;
+        padding-top: 16px;
+        border-top: 1px solid #dfe4eb;
+      }
+
+      .admin-login summary {
+        color: #596579;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-weight: 650;
+      }
+
+      .admin-panel {
+        margin-top: 24px;
+      }
+
+      .admin-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+
+      .admin-head h2 {
+        margin: 0;
+      }
+
+      .admin-head .lead {
+        margin: 4px 0 0;
+      }
+
+      .admin-head button,
+      .user-actions button {
+        width: auto;
+        min-height: 36px;
+        margin: 0;
+        padding-inline: 13px;
+      }
+
+      .user-table-wrap {
+        overflow-x: auto;
+      }
+
+      .user-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.875rem;
+      }
+
+      .user-table th,
+      .user-table td {
+        padding: 12px 10px;
+        border-bottom: 1px solid #e0e5ec;
+        text-align: left;
+        vertical-align: middle;
+      }
+
+      .user-table th {
+        color: #596579;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+      }
+
+      .user-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+      }
+
+      .user-actions .danger {
+        background: #f4d2d2;
+        color: #7d2020;
+      }
+
+      .user-status {
+        font-weight: 700;
+      }
+
+      .user-status.disabled {
+        color: #a33b3b;
+      }
+
+      .dropzone {
+        display: grid;
+        min-height: 210px;
+        place-items: center;
+        padding: 24px;
+        border: 2px dashed #9aa7ba;
+        border-radius: 14px;
+        background: #f5f7fa;
+        cursor: pointer;
+        text-align: center;
+        transition: border-color 150ms ease, background 150ms ease;
+      }
+
+      .dropzone:hover,
+      .dropzone.dragging {
+        border-color: #d79922;
+        background: #fff9ed;
+      }
+
+      .dropzone:focus-within {
+        outline: 3px solid #efb343;
+        outline-offset: 3px;
+      }
+
+      .dropzone .note {
+        display: grid;
+        width: 54px;
+        height: 54px;
+        margin: 0 auto 14px;
+        place-items: center;
+        border-radius: 50%;
+        background: #192333;
+        color: #f2b84b;
+        font-size: 1.8rem;
+        font-weight: 700;
+        line-height: 1;
+      }
+
+      .dropzone strong {
+        display: block;
+        font-size: 1.05rem;
+      }
+
+      .dropzone span {
+        display: block;
+        margin-top: 6px;
+        color: #6a7688;
+        font-size: 0.875rem;
+      }
+
+      input[type="file"] {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+
+      .selected {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 14px;
+        padding: 13px 15px;
+        border-radius: 10px;
+        background: #edf1f6;
+      }
+
+      .selected strong {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .selected span {
+        flex: none;
+        color: #68758a;
+        font-size: 0.875rem;
+      }
+
+      button,
+      .download {
+        display: inline-flex;
+        min-height: 46px;
+        align-items: center;
+        justify-content: center;
+        padding: 0 20px;
+        border: 0;
+        border-radius: 9px;
+        background: #f2b84b;
+        color: #192333;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 750;
+        text-decoration: none;
+      }
+
+      button {
+        width: 100%;
+        margin-top: 14px;
+      }
+
+      button:hover,
+      .download:hover {
+        background: #ffd070;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.45;
+      }
+
+      button:focus-visible,
+      .download:focus-visible {
+        outline: 3px solid #192333;
+        outline-offset: 3px;
+      }
+
+      .status {
+        margin-top: 18px;
+        padding: 18px;
+        border-radius: 12px;
+        background: #192333;
+        color: white;
+      }
+
+      .status-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .status-row span {
+        color: #c6d0de;
+        font-size: 0.875rem;
+      }
+
+      .progress {
+        height: 7px;
+        margin-top: 13px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #334054;
+      }
+
+      .progress div {
+        width: 0;
+        height: 100%;
+        border-radius: inherit;
+        background: #f2b84b;
+        transition: width 150ms ease;
+      }
+
+      .progress.indeterminate div {
+        width: 35%;
+        animation: loading 1.2s ease-in-out infinite;
+      }
+
+      .error {
+        margin-top: 14px;
+        padding: 13px 15px;
+        border: 1px solid #df9b9b;
+        border-radius: 10px;
+        background: #fff1f1;
+        color: #8f2020;
+      }
+
+      .results {
+        margin-top: 28px;
+      }
+
+      .result-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 14px;
+      }
+
+      .result-head h2 {
+        margin: 0;
+        font-size: 1.25rem;
+      }
+
+      .downloads {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .parts-warning {
+        color: #795517;
+        line-height: 1.6;
+      }
+
+      .pages {
+        display: grid;
+        gap: 18px;
+      }
+
+      .page {
+        display: block;
+        width: 100%;
+        border-radius: 10px;
+        background: white;
+        box-shadow: 0 14px 34px rgb(25 35 51 / 15%);
+      }
+
+      .locked-pages {
+        display: grid;
+        min-height: 220px;
+        place-items: center;
+        padding: 28px;
+        border: 1px solid #d4dbe5;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #f6f8fb, #e3e8ef);
+        text-align: center;
+      }
+
+      .locked-pages strong {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 1.1rem;
+      }
+
+      .locked-pages p {
+        margin: 0 0 16px;
+        color: #596579;
+      }
+
+      .locked-pages button {
+        width: auto;
+        margin: 0;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      @keyframes loading {
+        from {
+          transform: translateX(-110%);
+        }
+        to {
+          transform: translateX(300%);
+        }
+      }
+
+      @media (max-width: 560px) {
+        header {
+          flex-wrap: wrap;
+          gap: 12px;
+          padding-top: max(12px, env(safe-area-inset-top));
+          padding-right: max(14px, env(safe-area-inset-right));
+          padding-left: max(14px, env(safe-area-inset-left));
+        }
+
+        header p {
+          display: none;
+        }
+
+        .account {
+          width: 100%;
+          flex-wrap: wrap;
+          justify-content: space-between;
+          gap: 8px 12px;
+        }
+
+        #account-email {
+          max-width: 100%;
+          overflow-wrap: anywhere;
+        }
+
+        .account button,
+        .header-login {
+          min-height: 44px;
+        }
+
+        main {
+          width: min(100% - 18px, 980px);
+          padding-block: 18px;
+        }
+
+        .card {
+          padding: 20px 16px;
+          border-radius: 14px;
+        }
+
+        .dropzone {
+          min-height: 180px;
+        }
+
+        .field input {
+          font-size: 1rem;
+        }
+
+        .selected,
+        .status-row,
+        .admin-head {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .selected strong {
+          white-space: normal;
+          overflow-wrap: anywhere;
+        }
+
+        .admin-head button {
+          width: 100%;
+          min-height: 44px;
+        }
+
+        .user-table {
+          min-width: 680px;
+        }
+
+        .result-head {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .download {
+          width: 100%;
+        }
+
+        .downloads {
+          width: 100%;
+        }
+
+        .code-row {
+          grid-template-columns: 1fr;
+        }
+
+        .code-row button {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>音乐转简谱</h1>
+        <p>人声简谱、器乐简谱与和弦，另附鼓和贝斯分谱</p>
+      </div>
+      <div class="account" id="account" hidden>
+        <span id="account-email"></span>
+        <span class="account-usage" id="account-usage"></span>
+        <button id="logout" type="button">退出</button>
+      </div>
+      <button class="header-login" id="login" type="button">注册 / 登录</button>
+    </header>
+
+    <main>
+      <section class="card" id="auth-panel" hidden>
+        <h2>注册后查看完整乐谱</h2>
+        <p class="lead">首次验证会自动创建账号，当前转换结果会直接解锁。</p>
+        <form class="auth-form" id="auth-form">
+          <label class="field">
+            邮箱
+            <input id="email" name="email" type="email" autocomplete="email" required />
+          </label>
+          <div class="code-row">
+            <label class="field">
+              验证码
+              <input
+                id="code"
+                name="code"
+                type="text"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                pattern="[0-9]{6}"
+                maxlength="6"
+                required
+              />
+            </label>
+            <button id="send-code" type="button">发送验证码</button>
+          </div>
+          <button id="verify" type="submit">注册 / 登录</button>
+        </form>
+        <p class="auth-note">验证码 10 分钟内有效，每 60 秒可重新发送。</p>
+        <details class="admin-login">
+          <summary>管理员登录</summary>
+          <form class="auth-form" id="admin-form">
+            <label class="field">
+              管理员账号
+              <input
+                id="admin-username"
+                type="text"
+                value="admin"
+                autocomplete="username"
+                required
+              />
+            </label>
+            <label class="field">
+              密码
+              <input
+                id="admin-password"
+                type="password"
+                autocomplete="current-password"
+                required
+              />
+            </label>
+            <button id="admin-submit" type="submit">管理员登录</button>
+          </form>
+        </details>
+        <div class="error" id="auth-error" role="alert" hidden></div>
+      </section>
+
+      <section class="card" id="upload-panel">
+        <h2>上传一首音乐</h2>
+        <p class="lead">无需注册即可转换并查看第一页，注册后可查看和下载完整乐谱。</p>
+        <label class="dropzone" id="dropzone">
+          <input
+            id="audio"
+            type="file"
+            accept="audio/*,.aac,.flac,.m4a,.mp3,.ogg,.opus,.wav"
+          />
+          <span>
+            <span class="note" aria-hidden="true">♪</span>
+            <strong>选择音乐文件</strong>
+            <span>或拖放到这里 · 最长 6 分钟 · 最大 50 MB</span>
+          </span>
+        </label>
+
+        <div class="selected" id="selected" hidden>
+          <strong id="filename"></strong>
+          <span id="filesize"></span>
+        </div>
+        <div class="auth-form" id="song-info" hidden>
+          <div class="song-info-row">
+            <label class="field" for="artist">艺术家 *
+              <input id="artist" type="text" maxlength="180" required placeholder="请填写艺术家" />
+            </label>
+            <label class="field" for="song-title">歌曲名 *
+              <input id="song-title" type="text" maxlength="180" required placeholder="请填写歌曲名" />
+            </label>
+          </div>
+          <p id="metadata-status" aria-live="polite"></p>
+        </div>
+        <label><input id="show-vocal" type="checkbox" /> 显示 Vocal</label>
+        <button id="generate" type="button" disabled>生成乐谱</button>
+
+        <div class="status" id="status" aria-live="polite" hidden>
+          <div class="status-row">
+            <strong id="status-message">正在上传音乐</strong>
+            <span id="status-detail"></span>
+          </div>
+          <div
+            class="progress"
+            id="progress"
+            role="progressbar"
+            aria-label="处理进度"
+            aria-valuemin="0"
+            aria-valuemax="100"
+          ><div></div></div>
+        </div>
+        <div class="error" id="error" role="alert" hidden></div>
+      </section>
+
+      <section class="card admin-panel" id="admin-panel" hidden>
+        <div class="admin-head">
+          <div>
+            <h2>用户管理</h2>
+            <p class="lead">管理账号状态和登录会话。</p>
+          </div>
+          <button id="refresh-users" type="button">刷新</button>
+        </div>
+        <div class="user-table-wrap">
+          <table class="user-table">
+            <thead>
+              <tr>
+                <th>账号</th>
+                <th>注册时间</th>
+                <th>免费额度</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="user-list"></tbody>
+          </table>
+        </div>
+        <div class="error" id="admin-error" role="alert" hidden></div>
+      </section>
+
+      <section class="results" id="results" hidden>
+        <div class="result-head">
+          <h2>生成结果</h2>
+          <div class="downloads">
+            <a class="download" id="download" href="#" download>下载简谱 PDF</a>
+            <span class="downloads" id="part-downloads"></span>
+          </div>
+        </div>
+        <p class="parts-warning" id="parts-warning" role="status" hidden></p>
+        <div class="pages" id="pages"></div>
+        <div class="locked-pages" id="locked-pages" hidden>
+          <div>
+            <strong id="locked-message">注册后查看剩余乐谱</strong>
+            <p>当前转换结果会保留，注册后立即解锁。</p>
+            <button id="unlock" type="button">注册并继续查看</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="/vendor/jsmediatags-3.9.7.min.js"></script>
+    <script>
+      const authPanel = document.querySelector("#auth-panel");
+      const authForm = document.querySelector("#auth-form");
+      const email = document.querySelector("#email");
+      const code = document.querySelector("#code");
+      const sendCode = document.querySelector("#send-code");
+      const verify = document.querySelector("#verify");
+      const adminForm = document.querySelector("#admin-form");
+      const adminUsername = document.querySelector("#admin-username");
+      const adminPassword = document.querySelector("#admin-password");
+      const adminSubmit = document.querySelector("#admin-submit");
+      const authError = document.querySelector("#auth-error");
+      const account = document.querySelector("#account");
+      const accountEmail = document.querySelector("#account-email");
+      const accountUsage = document.querySelector("#account-usage");
+      const logout = document.querySelector("#logout");
+      const login = document.querySelector("#login");
+      const uploadPanel = document.querySelector("#upload-panel");
+      const adminPanel = document.querySelector("#admin-panel");
+      const userList = document.querySelector("#user-list");
+      const refreshUsers = document.querySelector("#refresh-users");
+      const adminError = document.querySelector("#admin-error");
+      const input = document.querySelector("#audio");
+      const dropzone = document.querySelector("#dropzone");
+      const selected = document.querySelector("#selected");
+      const filename = document.querySelector("#filename");
+      const filesize = document.querySelector("#filesize");
+      const generate = document.querySelector("#generate");
+      const status = document.querySelector("#status");
+      const statusMessage = document.querySelector("#status-message");
+      const statusDetail = document.querySelector("#status-detail");
+      const progress = document.querySelector("#progress");
+      const progressBar = progress.firstElementChild;
+      const error = document.querySelector("#error");
+      const results = document.querySelector("#results");
+      const download = document.querySelector("#download");
+      const partDownloads = document.querySelector("#part-downloads");
+      const partsWarning = document.querySelector("#parts-warning");
+      const pages = document.querySelector("#pages");
+      const lockedPages = document.querySelector("#locked-pages");
+      const lockedMessage = document.querySelector("#locked-message");
+      const unlock = document.querySelector("#unlock");
+      let file = null;
+      let currentQuotaRemaining = null;
+      let currentJobId = null;
+
+      async function requestJson(url, options = {}) {
+        const response = await fetch(url, {
+          cache: "no-store",
+          ...options,
+          headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+        });
+        let payload = {};
+        try {
+          payload = await response.json();
+        } catch {
+          throw new Error("服务器返回了无法识别的结果。");
+        }
+        if (!response.ok) throw new Error(payload.error || "请求失败，请重试。");
+        return payload;
+      }
+
+      function showUser(user) {
+        authPanel.hidden = true;
+        uploadPanel.hidden = false;
+        account.hidden = false;
+        login.hidden = true;
+        accountEmail.textContent = user.isAdmin ? `管理员 · ${user.email}` : user.email;
+        updateQuota(user);
+        adminPassword.value = "";
+        authError.hidden = true;
+        adminPanel.hidden = !user.isAdmin;
+        if (user.isAdmin) loadUsers();
+      }
+
+      function showGuest() {
+        authPanel.hidden = true;
+        uploadPanel.hidden = false;
+        adminPanel.hidden = true;
+        account.hidden = true;
+        login.hidden = false;
+        results.hidden = true;
+        status.hidden = true;
+        input.value = "";
+        currentQuotaRemaining = null;
+        chooseFile(null);
+      }
+
+      function showAuth() {
+        authPanel.hidden = false;
+        authPanel.scrollIntoView({ behavior: "smooth" });
+        email.focus({ preventScroll: true });
+      }
+
+      login.addEventListener("click", showAuth);
+      unlock.addEventListener("click", showAuth);
+
+      function updateQuota(user) {
+        currentQuotaRemaining = user.songsRemaining;
+        accountUsage.textContent = user.isAdmin
+          ? "不限额"
+          : `剩余 ${user.songsRemaining}/${user.songsLimit} 首`;
+        generate.disabled = !file || currentQuotaRemaining === 0;
+      }
+
+      function showAuthError(message) {
+        authError.textContent = message;
+        authError.hidden = false;
+      }
+
+      async function loadUsers() {
+        adminError.hidden = true;
+        refreshUsers.disabled = true;
+        try {
+          const payload = await requestJson("/api/admin/users");
+          userList.replaceChildren(
+            ...payload.users.map((user) => {
+              const row = document.createElement("tr");
+              const identity = document.createElement("td");
+              identity.textContent = user.isAdmin ? `${user.email}（管理员）` : user.email;
+              const created = document.createElement("td");
+              created.textContent = new Date(user.createdAt * 1000).toLocaleString();
+              const quota = document.createElement("td");
+              quota.textContent = user.isAdmin
+                ? "不限额"
+                : `${user.songsUsed}/${user.songsLimit} 首`;
+              const state = document.createElement("td");
+              state.className = `user-status${user.disabled ? " disabled" : ""}`;
+              state.textContent = user.disabled ? "已禁用" : "正常";
+              const actions = document.createElement("td");
+              actions.className = "user-actions";
+              if (!user.isAdmin) {
+                const options = [
+                  [user.disabled ? "enable" : "disable", user.disabled ? "启用" : "禁用"],
+                  ["logout", "强制退出"],
+                  ["delete", "删除"],
+                ];
+                for (const [action, label] of options) {
+                  const button = document.createElement("button");
+                  button.type = "button";
+                  button.dataset.userId = user.id;
+                  button.dataset.action = action;
+                  button.textContent = label;
+                  if (action === "delete") button.className = "danger";
+                  actions.append(button);
+                }
+              } else {
+                actions.textContent = "—";
+              }
+              row.append(identity, created, quota, state, actions);
+              return row;
+            }),
+          );
+        } catch (reason) {
+          adminError.textContent = reason.message || "用户列表读取失败。";
+          adminError.hidden = false;
+        } finally {
+          refreshUsers.disabled = false;
+        }
+      }
+
+      refreshUsers.addEventListener("click", loadUsers);
+
+      userList.addEventListener("click", async (event) => {
+        const button = event.target.closest("button[data-action]");
+        if (!button) return;
+        const action = button.dataset.action;
+        if (action === "delete" && !confirm("确定删除这个用户吗？")) return;
+        button.disabled = true;
+        adminError.hidden = true;
+        try {
+          await requestJson(`/api/admin/users/${button.dataset.userId}/action`, {
+            method: "POST",
+            body: JSON.stringify({ action }),
+          });
+          await loadUsers();
+        } catch (reason) {
+          adminError.textContent = reason.message || "用户操作失败。";
+          adminError.hidden = false;
+          button.disabled = false;
+        }
+      });
+
+      sendCode.addEventListener("click", async () => {
+        if (!email.reportValidity()) return;
+        sendCode.disabled = true;
+        authError.hidden = true;
+        try {
+          const payload = await requestJson("/api/auth/code", {
+            method: "POST",
+            body: JSON.stringify({ email: email.value }),
+          });
+          authError.textContent = payload.message;
+          authError.style.background = "#eef9f0";
+          authError.style.borderColor = "#8bbb94";
+          authError.style.color = "#285d32";
+          authError.hidden = false;
+          let remaining = 60;
+          sendCode.textContent = `${remaining} 秒后重发`;
+          const timer = setInterval(() => {
+            remaining -= 1;
+            sendCode.textContent = remaining ? `${remaining} 秒后重发` : "发送验证码";
+            if (!remaining) {
+              clearInterval(timer);
+              sendCode.disabled = false;
+            }
+          }, 1000);
+        } catch (reason) {
+          authError.removeAttribute("style");
+          showAuthError(reason.message || "验证码发送失败。");
+          sendCode.disabled = false;
+        }
+      });
+
+      authForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        verify.disabled = true;
+        authError.hidden = true;
+        authError.removeAttribute("style");
+        try {
+          const payload = await requestJson("/api/auth/verify", {
+            method: "POST",
+            body: JSON.stringify({ email: email.value, code: code.value }),
+          });
+          showUser(payload.user);
+          if (currentJobId) {
+            const job = await requestJson(`/api/jobs/${currentJobId}`);
+            if (job.status === "complete") showCompleted(job);
+          }
+        } catch (reason) {
+          showAuthError(reason.message || "登录失败。");
+        } finally {
+          verify.disabled = false;
+        }
+      });
+
+      adminForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        adminSubmit.disabled = true;
+        authError.hidden = true;
+        authError.removeAttribute("style");
+        try {
+          const payload = await requestJson("/api/auth/admin", {
+            method: "POST",
+            body: JSON.stringify({
+              username: adminUsername.value,
+              password: adminPassword.value,
+            }),
+          });
+          showUser(payload.user);
+          if (currentJobId) {
+            const job = await requestJson(`/api/jobs/${currentJobId}`);
+            if (job.status === "complete") showCompleted(job);
+          }
+        } catch (reason) {
+          showAuthError(reason.message || "管理员登录失败。");
+        } finally {
+          adminSubmit.disabled = false;
+        }
+      });
+
+      logout.addEventListener("click", async () => {
+        try {
+          await requestJson("/api/auth/logout", { method: "POST", body: "{}" });
+        } finally {
+          showGuest();
+        }
+      });
+
+      const artist = document.querySelector("#artist");
+      const songTitle = document.querySelector("#song-title");
+      const songInfo = document.querySelector("#song-info");
+      const metadataStatus = document.querySelector("#metadata-status");
+
+      async function chooseFile(nextFile) {
+        const tooLarge = nextFile && nextFile.size > 50 * 1024 * 1024;
+        file = tooLarge ? null : nextFile || null;
+        songInfo.hidden = !file;
+        artist.value = "";
+        songTitle.value = "";
+        metadataStatus.textContent = "";
+        selected.hidden = !file;
+        generate.disabled = !file || currentQuotaRemaining === 0;
+        if (tooLarge) {
+          input.value = "";
+          showError("音频文件超过 50 MB，请选择较小的文件。");
+          return;
+        }
+        if (!file) return;
+        filename.textContent = file.name;
+        filesize.textContent = `${(file.size / 1024 / 1024).toFixed(1)} MB`;
+        error.hidden = true;
+        results.hidden = true;
+        const selectedFile = file;
+        metadataStatus.textContent = "正在本地读取歌曲信息，文件尚未上传。";
+        try {
+          const metadata = await new Promise((resolve, reject) => {
+            new window.jsmediatags.Reader(selectedFile)
+              .setTagsToRead(["artist", "title"])
+              .read({onSuccess: (result) => resolve(result.tags), onError: reject});
+          });
+          if (file !== selectedFile) return;
+          const cleanTag = (value) => typeof value === "string"
+            ? value.replace(/\s+/g, " ").trim().slice(0, 180) : "";
+          if (!artist.value) artist.value = cleanTag(metadata.artist);
+          if (!songTitle.value) songTitle.value = cleanTag(metadata.title);
+          metadataStatus.textContent = artist.value && songTitle.value
+            ? ""
+            : "文件信息不完整，请补写艺术家和歌曲名；文件尚未上传。";
+        } catch {
+          if (file !== selectedFile) return;
+          metadataStatus.textContent = "无法读取本地标签，请填写艺术家和歌曲名；文件尚未上传。";
+        }
+        generate.disabled = !file || currentQuotaRemaining === 0;
+      }
+
+      input.addEventListener("change", () => chooseFile(input.files[0]));
+
+      for (const eventName of ["dragenter", "dragover"]) {
+        dropzone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropzone.classList.add("dragging");
+        });
+      }
+
+      for (const eventName of ["dragleave", "drop"]) {
+        dropzone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropzone.classList.remove("dragging");
+        });
+      }
+
+      dropzone.addEventListener("drop", (event) => {
+        chooseFile(event.dataTransfer.files[0]);
+      });
+
+      function showError(message) {
+        error.textContent = message;
+        error.hidden = false;
+        status.hidden = true;
+        generate.disabled = !file || currentQuotaRemaining === 0;
+      }
+
+      function showCompleted(job) {
+        currentJobId = job.id;
+        download.hidden = !job.result.fullAccess;
+        if (job.result.pdf) {
+          download.href = job.result.pdf;
+          download.download = job.pdfFilename;
+        }
+        partDownloads.replaceChildren(
+          ...(job.result.partPdfs || []).map((part) => {
+            const link = document.createElement("a");
+            link.className = "download";
+            link.href = part.url;
+            link.download = part.filename;
+            link.textContent = `下载${part.label} PDF`;
+            return link;
+          }),
+        );
+        partsWarning.textContent = job.result.partsWarning || "";
+        partsWarning.hidden = !job.result.partsWarning;
+        pages.replaceChildren(
+          ...job.result.pages.map((source, index) => {
+            const image = document.createElement("img");
+            image.className = "page";
+            image.src = source;
+            image.alt = `乐谱第 ${index + 1} 页`;
+            image.loading = index ? "lazy" : "eager";
+            return image;
+          }),
+        );
+        lockedPages.hidden = job.result.fullAccess;
+        lockedMessage.textContent = job.result.lockedPageCount
+          ? `注册后查看剩余 ${job.result.lockedPageCount} 页乐谱`
+          : "注册后下载完整乐谱";
+        results.hidden = false;
+        generate.disabled = !file || currentQuotaRemaining === 0;
+      }
+
+      function poll(jobId) {
+        const timer = setInterval(async () => {
+          try {
+            const response = await fetch(`/api/jobs/${jobId}`, { cache: "no-store" });
+            const job = await response.json();
+            if (!response.ok) throw new Error(job.error || "读取任务失败");
+            statusMessage.textContent = job.message;
+            if (job.progress) {
+              const percent = Math.round(
+                (job.progress.current / job.progress.total) * 100,
+              );
+              progress.classList.remove("indeterminate");
+              progressBar.style.width = `${percent}%`;
+              progress.setAttribute("aria-valuenow", percent);
+              const clock = (seconds) => `${Math.floor(seconds / 60)}分${Math.round(seconds % 60)}秒`;
+              const eta = job.progress.etaSeconds;
+              statusDetail.textContent = `当前识别阶段 ${percent}% · 已用 ${clock(job.progress.elapsedSeconds || 0)}`
+                + (eta == null ? " · 正在估算剩余时间" : ` · 预计还需 ${clock(eta)}`);
+            } else if (job.status !== "failed") {
+              progress.classList.add("indeterminate");
+              progress.removeAttribute("aria-valuenow");
+              statusDetail.textContent = "当前阶段完成时间暂无法估算";
+            }
+            if (job.status === "failed") {
+              clearInterval(timer);
+              showError(job.error || "生成失败，请重试。");
+              requestJson("/api/auth/me")
+                .then((payload) => {
+                  if (payload.user) updateQuota(payload.user);
+                })
+                .catch(() => {});
+            }
+            if (job.status === "complete") {
+              clearInterval(timer);
+              progress.classList.remove("indeterminate");
+              progressBar.style.width = "100%";
+              progress.setAttribute("aria-valuenow", "100");
+              statusDetail.textContent = "完成";
+              showCompleted(job);
+              results.scrollIntoView({ behavior: "smooth" });
+            }
+          } catch (reason) {
+            clearInterval(timer);
+            showError(reason.message || "无法读取处理进度。");
+          }
+        }, 2000);
+      }
+
+      generate.addEventListener("click", () => {
+        if (!file) return;
+        if (!artist.reportValidity() || !songTitle.reportValidity()) return;
+        if (!artist.value.trim() || !songTitle.value.trim()) {
+          showError("请填写艺术家和歌曲名。");
+          return;
+        }
+        generate.disabled = true;
+        error.hidden = true;
+        results.hidden = true;
+        status.hidden = false;
+        statusMessage.textContent = "正在上传音乐";
+        statusDetail.textContent = "0%";
+        progress.classList.remove("indeterminate");
+        progressBar.style.width = "0";
+        progress.setAttribute("aria-valuenow", "0");
+
+        const request = new XMLHttpRequest();
+        request.open("POST", "/api/jobs");
+        request.setRequestHeader("Content-Type", "application/octet-stream");
+        request.setRequestHeader("X-Filename", encodeURIComponent(file.name));
+        request.setRequestHeader("X-Artist", encodeURIComponent(artist.value.trim()));
+        request.setRequestHeader("X-Song-Title", encodeURIComponent(songTitle.value.trim()));
+        request.setRequestHeader("X-Show-Vocal", String(document.querySelector("#show-vocal").checked));
+        request.upload.addEventListener("progress", (event) => {
+          if (!event.lengthComputable) return;
+          const percent = Math.round((event.loaded / event.total) * 100);
+          progressBar.style.width = `${percent}%`;
+          progress.setAttribute("aria-valuenow", percent);
+          statusDetail.textContent = `${percent}%`;
+        });
+        request.addEventListener("load", () => {
+          let payload;
+          try {
+            payload = JSON.parse(request.responseText);
+          } catch {
+            showError("服务器返回了无法识别的结果。");
+            return;
+          }
+          if (request.status !== 202) {
+            showError(payload.error || "上传失败，请重试。");
+            return;
+          }
+          currentJobId = payload.id;
+          if (payload.quotaRemaining !== null) {
+            currentQuotaRemaining = payload.quotaRemaining;
+            accountUsage.textContent = `剩余 ${currentQuotaRemaining}/10 首`;
+          }
+          statusMessage.textContent = payload.message;
+          statusDetail.textContent = "";
+          progress.classList.add("indeterminate");
+          progress.removeAttribute("aria-valuenow");
+          poll(payload.id);
+        });
+        request.addEventListener("error", () => showError("网络中断，请重试。"));
+        request.send(file);
+      });
+
+      requestJson("/api/auth/me")
+        .then((payload) => (payload.user ? showUser(payload.user) : showGuest()))
+        .catch(() => showGuest());
+    </script>
+  </body>
+</html>

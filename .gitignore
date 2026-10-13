@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.env
+.env.*
+service.env*
+.venv/
+cache/
+data/
+tools/
+*.log
+.DS_Store
+._*
+/deploy/
